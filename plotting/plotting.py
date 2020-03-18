@@ -12,3 +12,14 @@
 # Imports.
 import pandas as pd
 import altair as alt
+
+
+def line_plot():
+    
+    return None
+
+
+def candlestick():
+    
+    return None
+
