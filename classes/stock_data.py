@@ -71,14 +71,14 @@ class StockData:
                 continue
             
             # Construct the local data folder.
-            path = self.create_folder_path(label)
+            path = self.create_folder_path(label.lower())
             
             # Download data.
             tckr = yf.Ticker(label.upper())
             data = tckr.history(period='max').reset_index()
             meta = {
                 'symbol': label.upper(),
-                'last_date': f"{data['Date'].max().year}-{data['Date'].max().month.zfill(2)}-{data['Date'].max().day.zfill(2)}"
+                'last_date': f"{str(data['Date'].max().year)}-{str(data['Date'].max().month).zfill(2)}-{str(data['Date'].max().day).zfill(2)}"
             }
             
             # Create the folder if it doesn't exist.
@@ -118,7 +118,7 @@ class StockData:
                 continue
             
             # Construct the local data folder.
-            path = create_folder_path(label)
+            path = self.create_folder_path(label.lower())
             
             # Load current data.
             with open(f"{path}/meta.pkl", "wb") as fp:
@@ -131,7 +131,7 @@ class StockData:
             new_data = tckr.history(start=last_date).reset_index()
             data = pd.concat([data, new_data], axis=0).drop_duplicates()
             data.to_pickle(f"{path}/data.pkl")
-            meta['last_date'] = f"{data['Date'].max().year}-{data['Date'].max().month.zfill(2)}-{data['Date'].max().day.zfill(2)}"
+            meta['last_date'] = f"{str(data['Date'].max().year)}-{str(data['Date'].max().month).zfill(2)}-{str(data['Date'].max().day).zfill(2)}"
             with open(f"{path}/meta.pkl", "wb") as fp:
                 pickle.dump(meta, fp, protocol=pickle.HIGHEST_PROTOCOL)
 
@@ -158,3 +158,94 @@ class StockData:
         # Add and update.
         self.update(labels=update_labels)
         self.add(labels=add_labels)
+
+
+    def load(self, labels=None):
+        """
+        Load data from the data folder into the StockData object. Data is loaded
+        into a dictionary of pandas.DataFrames.
+        
+        Args:
+            labels (str, list): A single string or list of strings
+             of the symbols indicating the stock or stocks to be
+             loaded. Default is None, which will load all stock data
+             found in the data directory.
+        """
+        # Initialize empty container.
+        self.d_data = {}
+        
+        # Handle default case.
+        if isinstance(labels, type(None)):
+            labels = [l.lower() for l in self.dir_list]
+        else:
+            labels = labels if isinstance(labels, list) else [labels]
+        
+        # Loop and populate object data.
+        for label in labels:
+            # Ensure data is in library, instruct otherwise.
+            if label.lower() not in self.dir_list:
+                print(f"No stock data found for '{label.upper()}'. Use the '.add()' method to add a new stock symbol.")
+                continue
+            self.d_data[label.lower()] = pd.read_pickle(self.create_folder_path(label.lower())+"/data.pkl")
+
+
+    def get_object_data(self):
+        """
+        Returns the dictionary containing all object data.
+        """
+        try:
+            return self.d_data
+        except:
+            print("StockData object does not has any data loaded.")
+
+
+    def add_moving_average(self, labels=None, column='Close', window=None, method='ema'):
+        """
+        Calculates the moving average for a given label and column.
+        Columns are added to each stock DataFrame as SMAX or EMAX,
+        where X is the window size in days.
+        
+        Args:
+            labels (str, list): A single string or list of strings
+             of the symbols indicating the stock or stocks to have 
+             the moving average calculated. Default is None, which
+             will calculate the moving average for all labels.
+            
+            column (str): The column from the stock DataFrame to use
+             to calculate the moving average. Accepted values are 'Open',
+             'Close', 'High', 'Low'.
+            
+            window (int, list): The window for moving average calculated, in days.
+             If a list is provided, moving averages will be calculated
+             for each of them.
+            
+            method (str): Type of moving average to calculate. Accepted values
+             are 'sma' (simple moving average), 'ema' (exponential moving
+             average). Default is 'ema'.
+        """
+        # Handle errors.
+        if not self.d_data:
+            raise ValueError("There is no data loaded into this StockData object.")
+        if not (isinstance(window, int) or isinstance(window, list)):
+            raise ValueError("Argument 'window' must be given an integer or list of integers value.")
+        if isinstance(window, list):
+            for w in window:
+                if not isinstance(w, int):
+                    raise ValueError("Values in list passed to 'window' argument must be integers.")
+        if method not in ['sma', 'ema']:
+            raise ValueError("Argument 'method' must be one of: 'sma', 'ema'.")
+
+        # Handle default cases.
+        # labels
+        if isinstance(labels, type(None)):
+            labels = [l.lower() for l in self.dir_list]
+        else:
+            labels = labels if isinstance(labels, list) else [labels]
+        # window
+        window = window if isinstance(window, list) else [window]
+        
+        
+        
+
+        
+            
