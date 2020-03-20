@@ -15,7 +15,8 @@ import warnings
 import pickle
 import pandas as pd
 import yfinance as yf
-from utils.utils import check_and_convert_value_to_list
+from .utils.utils import check_and_convert_value_to_list
+from .analysis.moving_average import simple_moving_average, exp_moving_average
 
 
 class StockData:
@@ -198,3 +199,49 @@ class StockData:
             return self.d_data
         except:
             print("StockData object does not has any data loaded.")
+
+
+    def add_moving_average(self, labels=None, column='Close', windows=None, method='sma'):
+        """
+        Calculates the moving average for a given label and column.
+        Columns are added to each stock DataFrame as SMAX or EMAX,
+        where X is the window size in days.
+        
+        Args:
+            labels (str, list): A single string or list of strings
+             of the symbols indicating the stock or stocks to have 
+             the moving average calculated. Default is None, which
+             will calculate the moving average for all labels.
+            
+            column (str): The column from the stock DataFrame to use
+             to calculate the moving average. Accepted values are 'Open',
+             'Close', 'High', 'Low'.
+            
+            windows (int, list): The window for moving average calculated, in days.
+             If a list is provided, moving averages will be calculated
+             for each of them.
+            
+            method (str): Type of moving average to calculate. Accepted values
+             are 'sma' (simple moving average), 'ema' (exponential moving
+             average). Default is 'ema'.
+        """
+        # Handle errors.
+        if not self.d_data:
+            raise ValueError("There is no data loaded into this StockData object.")
+        if isinstance(windows, type(None)):
+            raise ValueError("At least one value must be passed to argument 'windows'.")
+        if method not in ['sma', 'ema']:
+            raise ValueError("Argument 'method' must be one of: 'sma', 'ema'.")
+        
+        # Handle default case.
+        if isinstance(labels, type(None)):
+            labels = [l.lower() for l in self.dir_list]
+        else:
+            labels = check_and_convert_value_to_list(labels, str)
+        
+        # Handle moving averages.
+        d_ma = {'sma': simple_moving_average,
+                'ema': exp_moving_average}
+        for label in labels:
+            self.d_data[label] = d_ma[method](self.d_data[label], column, windows)
+        
