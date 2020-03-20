@@ -15,6 +15,7 @@ import warnings
 import pickle
 import pandas as pd
 import yfinance as yf
+from utils.utils import check_and_convert_value_to_list
 
 
 class StockData:
@@ -61,7 +62,7 @@ class StockData:
              of the symbols indicating the stock or stocks to be
              added.
         """
-        labels = labels if isinstance(labels, list) else [labels]
+        labels = check_and_convert_value_to_list(labels, str)
         
         # Loop and add data.
         for label in labels:
@@ -108,7 +109,7 @@ class StockData:
         if isinstance(labels, type(None)):
             labels = [l.lower() for l in self.dir_list]
         else:
-            labels = labels if isinstance(labels, list) else [labels]
+            labels = check_and_convert_value_to_list(labels, str)
         
         # Loop and udpate data.
         for label in labels:
@@ -147,7 +148,7 @@ class StockData:
              updated or added. Default is None, which only updates
              the existing stocks found in the directory.
         """
-        labels = labels if isinstance(labels, list) else [labels]
+        labels = check_and_convert_value_to_list(labels, str)
         add_labels, update_labels = [], []
         for label in labels:
             if label.lower() in self.dir_list:
@@ -178,7 +179,7 @@ class StockData:
         if isinstance(labels, type(None)):
             labels = [l.lower() for l in self.dir_list]
         else:
-            labels = labels if isinstance(labels, list) else [labels]
+            labels = check_and_convert_value_to_list(labels, str)
         
         # Loop and populate object data.
         for label in labels:
