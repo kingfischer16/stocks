@@ -8,6 +8,7 @@
 """
 
 # Imports.
+import warnings
 import numpy as np
 import pandas as pd
 
@@ -81,6 +82,45 @@ def add_columns_on_import(df_input):
     df = df_input.copy()
     # Add columns.
     df['Date'] = df.index
+    df['FracDividends'] = df['Dividends'] / df['Close']
     df = add_year_month_quarter(df, date_col='Date')
+    # Make Dividends column equal to Nan when zero.
+    
+    return df
+
+
+def arrange_data_for_chart(d_data, labels=None, column='Close'):
+    """
+    Creates a single DataFrame from the source dictionary, and
+    arrange it for easy use in Altair.
+    
+    Args:
+        d_data (dict): A dictionary of pandas.DataFrames.
+        
+        labels (str, list): A single string or list of strings
+         of the symbols indicating the stock or stocks to be
+         updated. Default is None, which updates all stocks
+         found in the data directory.
+    """
+    # Handle labels list if string or None.
+    if isinstance(labels, type(None)):
+        labels = [l.lower() for l in d_data.keys()]
+    else:
+        labels = check_and_convert_value_to_list(labels, str)
+    
+    # Warning for large number of data points.
+    if len(labels) > 25:
+        warnings.warn("More than 25 separate series are present, which will be difficult to visualize. Consider plotting fewer series at once.")
+    
+    # Get relevant data for each label.
+    df_list = []
+    for label in labels:
+        df_temp = d_data[label][['Date', column]].copy()
+        df_temp = df_temp.loc[df_temp[column]>0]
+        df_temp['Symbol'] = label.upper()
+        df_list.append(df_temp)
+    
+    # Concatenate all data.
+    df = pd.concat(df_list)
     
     return df

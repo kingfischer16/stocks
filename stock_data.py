@@ -15,9 +15,11 @@ import warnings
 import pickle
 import pandas as pd
 import yfinance as yf
+
 from .utils.utils import check_and_convert_value_to_list, add_columns_on_import
 from .analysis.moving_average import simple_moving_average, exp_moving_average
 from .analysis.macd import macd
+from .plotting.plotting import line_chart
 
 
 class StockData:
