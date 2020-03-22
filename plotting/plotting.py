@@ -23,3 +23,7 @@ def candlestick():
     
     return None
 
+
+def macd_plot():
+    
+    return None

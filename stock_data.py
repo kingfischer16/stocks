@@ -15,8 +15,9 @@ import warnings
 import pickle
 import pandas as pd
 import yfinance as yf
-from .utils.utils import check_and_convert_value_to_list
+from .utils.utils import check_and_convert_value_to_list, add_columns_on_import
 from .analysis.moving_average import simple_moving_average, exp_moving_average
+from .analysis.macd import macd
 
 
 class StockData:
@@ -77,7 +78,7 @@ class StockData:
             
             # Download data.
             tckr = yf.Ticker(label.upper())
-            data = tckr.history(period='max').reset_index()
+            data = add_columns_on_import(tckr.history(period='max'))
             meta = {
                 'symbol': label.upper(),
                 'last_date': f"{str(data['Date'].max().year)}-{str(data['Date'].max().month).zfill(2)}-{str(data['Date'].max().day).zfill(2)}"
@@ -130,7 +131,9 @@ class StockData:
             
             # Update data.
             tckr = yf.Ticker(label.upper())
-            new_data = tckr.history(start=last_date).reset_index()
+            new_data = add_columns_on_import(add_tckr.history(start=last_date))
+            
+            # Add new date to old data.
             data = pd.concat([data, new_data], axis=0).drop_duplicates()
             data.to_pickle(f"{path}/data.pkl")
             meta['last_date'] = f"{str(data['Date'].max().year)}-{str(data['Date'].max().month).zfill(2)}-{str(data['Date'].max().day).zfill(2)}"
@@ -244,4 +247,23 @@ class StockData:
                 'ema': exp_moving_average}
         for label in labels:
             self.d_data[label] = d_ma[method](self.d_data[label], column, windows)
+
+
+    def add_macd(self, labels=None):
+        """
+        Adds the MACD and 12- and 26-period EMA to each stock symbol data.
         
+        Args:
+            labels (str, list): A single string or list of strings
+             of the symbols indicating the stock or stocks to have 
+             the moving average calculated. Default is None, which
+             will calculate the moving average for all labels.
+        """
+        # Handle default case.
+        if isinstance(labels, type(None)):
+            labels = [l.lower() for l in self.dir_list]
+        else:
+            labels = check_and_convert_value_to_list(labels, str)
+        
+        for label in labels:
+            self.d_data[label] = macd(self.d_data[label], 'Close')
