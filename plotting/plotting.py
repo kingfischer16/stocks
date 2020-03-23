@@ -15,8 +15,8 @@ import altair as alt
 from ..utils.utils import arrange_data_for_chart
 
 
-def line_chart(d_data, x_col='Date', y_col='Close', labels=None,
-               label_col='Symbol', width=800, height=400):
+def line_chart(d_data, x_col='Date', y_col='Close', labels=None, period='max',
+               width=800, height=400):
     """
     Creates a line plot using altair.
     
@@ -27,6 +27,13 @@ def line_chart(d_data, x_col='Date', y_col='Close', labels=None,
         
         y_col (str): Column name for y-axis data.
         
+        labels (str, list): A single string or list of strings
+         of the symbols indicating the stock or stocks to plot.
+         Default is None, which will plot all labels.
+        
+        period (str): The time period to plot, in days ('5d'),
+         months ('6m'), years ('4y') or 'max'.
+        
         width (int): Chart width in pixels.
         
         height (int): Chart height in pixels.
@@ -34,14 +41,14 @@ def line_chart(d_data, x_col='Date', y_col='Close', labels=None,
     Returns:
         (altair.vegalite.v4.api.Chart): Altair chart object.
     """
-    source = arrange_data_for_chart(d_data, labels, y_col)
+    source = arrange_data_for_chart(d_data, labels, y_col, period)
     line = alt.Chart(source)\
             .properties(width=width, height=height)\
             .mark_line()\
             .encode(
                 x=f'{x_col}:T',
                 y=y_col,
-                color=label_col)\
+                color='Symbol')\
             .interactive(bind_y=False)
     return line
 

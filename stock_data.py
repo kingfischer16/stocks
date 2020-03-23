@@ -16,10 +16,11 @@ import pickle
 import pandas as pd
 import yfinance as yf
 
-from .utils.utils import check_and_convert_value_to_list, add_columns_on_import
+from .utils.utils import (check_and_convert_value_to_list, add_columns_on_import,
+    reduce_data_period)
 from .analysis.moving_average import simple_moving_average, exp_moving_average
 from .analysis.macd import macd
-from .plotting.plotting import line_chart
+from .plotting.plotting import macd_chart, line_chart
 
 
 class StockData:
@@ -269,3 +270,66 @@ class StockData:
         
         for label in labels:
             self.d_data[label] = macd(self.d_data[label], 'Close')
+
+
+    def plot_single_analysis(self, symbol, period='max', width=900, height=400):
+        """
+        Plots candlestick and MACD for a single stock in the data.
+        
+        Args:
+            symbol (str): A stock symbol to plot.
+            
+            period (str): The time period to plot, in days ('5d'),
+             months ('6m'), years ('4y') or 'max'.
+             
+            width (int): Chart width in pixels.
+        
+            height (int): Chart height in pixels.
+        
+        Returns:
+            (None)
+        
+        Raises:
+            ValueError - If stock symbol is not found in the object data.
+        """
+        # Handle missing stock data symbol.
+        if symbol.lower() not in self.dir_list:
+            raise ValueError(f"Symbol {symbol} not found in the StockData object.")
+        
+        # Add MACD if missing from data.
+        if 'MACD' not in self.d_data[symbol.lower()].columns:
+            self.add_macd(labels=symbol.lower())
+        
+        # Plot graph.
+        macd_chart(
+            source=reduce_data_period(self.d_data[symbol.lower()], 'Date', period),
+            width=width,
+            height=height
+        ).display()
+
+
+    def plot_compare_multiple(self, labels, data_col='Close', period='max',
+                        width=900, height=400):
+        """
+        Plots multiple stocks on the same chart.
+        
+        Args:
+            labels (str, list): Stock symbols to plot on the same chart.
+            
+            data_col (str): The column with values to plot.
+            
+            period (str): The time period to plot, in days ('5d'),
+             months ('6m'), years ('4y') or 'max'.
+            
+            width (int): Chart width in pixels.
+        
+            height (int): Chart height in pixels.
+        
+        Returns:
+            (None)
+        """
+        line_chart(
+            d_data=self.d_data, x_col='Date', y_col=data_col, labels=labels,
+            period=period, width=width, height=height
+        ).display()
+

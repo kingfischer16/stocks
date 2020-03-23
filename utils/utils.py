@@ -12,6 +12,8 @@ import warnings
 import numpy as np
 import pandas as pd
 
+from pandas.tseries.offsets import DateOffset
+
 
 def check_and_convert_value_to_list(val_or_list, expected_type):
     """
@@ -89,10 +91,10 @@ def add_columns_on_import(df_input):
     return df
 
 
-def arrange_data_for_chart(d_data, labels=None, column='Close'):
+def arrange_data_for_chart(d_data, labels=None, column='Close', period='max'):
     """
     Creates a single DataFrame from the source dictionary, and
-    arrange it for easy use in Altair.
+    arrange it for easy use in Altair. Adds the 'Symbol' column.
     
     Args:
         d_data (dict): A dictionary of pandas.DataFrames.
@@ -101,6 +103,12 @@ def arrange_data_for_chart(d_data, labels=None, column='Close'):
          of the symbols indicating the stock or stocks to be
          updated. Default is None, which updates all stocks
          found in the data directory.
+        
+        period (str): The time period to plot, in days ('5d'),
+         months ('6m'), years ('4y') or 'max'.
+    
+    Returns:
+        (pandas.DataFrame): Arranged data.
     """
     # Handle labels list if string or None.
     if isinstance(labels, type(None)):
@@ -115,7 +123,9 @@ def arrange_data_for_chart(d_data, labels=None, column='Close'):
     # Get relevant data for each label.
     df_list = []
     for label in labels:
-        df_temp = d_data[label][['Date', column]].copy()
+        df_temp = reduce_data_period(d_data[label][['Date', column]],
+                                     date_col='Date',
+                                     period=period)
         df_temp = df_temp.loc[df_temp[column]>0]
         df_temp['Symbol'] = label.upper()
         df_list.append(df_temp)
@@ -124,3 +134,37 @@ def arrange_data_for_chart(d_data, labels=None, column='Close'):
     df = pd.concat(df_list)
     
     return df
+
+
+def reduce_data_period(df_input, date_col='Date', period='max'):
+    """
+    Returns a DataFrame with the data period reduced.
+    
+    Args:
+        df_input (pandas.DataFrame): The input data.
+        
+        period (str): The time period to plot, in days ('5d'),
+         months ('6m'), years ('4y') or 'max'.
+    
+    Returns:
+        (pandas.DataFrame): The reduced data.
+    """
+    # Handle default period.
+    if period == 'max':
+        return df_input.copy()
+    
+    time_type = period[-1]
+    time_quant = int(period[:-1])
+    
+    last_date = df_input[date_col].max()
+    
+    if time_type == 'd':
+        cutoff_date = last_date - DateOffset(days=time_quant)
+    elif time_type == 'm':
+        cutoff_date = last_date - DateOffset(months=time_quant)
+    elif time_type == 'y':
+        cutoff_date = last_date - DateOffset(years=time_quant)
+    else:
+        raise ValueError("Time period must be one of: 'd' (days), 'm' (months), 'y' (years).")
+    
+    return df_input.loc[df_input[date_col]>=cutoff_date].copy()
