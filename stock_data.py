@@ -16,10 +16,13 @@ import pickle
 import pandas as pd
 import yfinance as yf
 
-from .utils.utils import (check_and_convert_value_to_list, add_columns_on_import,
-    reduce_data_period)
+from .utils.utils import (check_and_convert_value_to_list,
+                          reduce_data_period, add_year_month_quarter)
 from .analysis.moving_average import simple_moving_average, exp_moving_average
 from .analysis.macd import macd
+from .analysis.returns import (calculate_daily_returns, calculate_monthly_returns,
+                               calculate_quarterly_returns, calculate_annual_returns,
+                               dividend_summary)
 from .plotting.plotting import macd_chart, line_chart
 
 
@@ -42,7 +45,7 @@ class StockData:
         if not self.dir_list:
             print(f"Folder '{self.root}' has no data.")
         else:
-            print(f"Folder 'data_folder' the following stocks:\n\t|")
+            print(f"Folder '{self.root}' the following stocks:\n\t|")
             for folder in self.dir_list:
                 print(f"\t|-- {folder.upper()}")
 
@@ -55,6 +58,30 @@ class StockData:
             return self.root + folder.lower()
         else:
             return self.root + "/" + folder.lower()
+    
+    
+    def add_columns_on_import(self, df_input):
+        """
+        Centralized adding of useful columns.
+
+        Args:
+            df_input (pandas.DataFrame): The stock price data table.
+
+        Returns:
+            (pandas.DataFrame): The table with the new columns.
+        """
+        # Copy to avoid overwrite.
+        df = df_input.copy()
+        # Add columns.
+        df['Date'] = df.index
+        df['FracDividends'] = df['Dividends'] / df['Close']
+        df = add_year_month_quarter(df, date_col='Date')
+        df = calculate_daily_returns(df, 'Close')
+        df = calculate_monthly_returns(df, 'Close')
+        df = calculate_quarterly_returns(df, 'Close')
+        df = calculate_annual_returns(df, 'Close')
+
+        return df
 
 
     def add(self, labels):
@@ -81,7 +108,7 @@ class StockData:
             
             # Download data.
             tckr = yf.Ticker(label.upper())
-            data = add_columns_on_import(tckr.history(period='max'))
+            data = self.add_columns_on_import(tckr.history(period='max'))
             meta = {
                 'symbol': label.upper(),
                 'last_date': f"{str(data['Date'].max().year)}-{str(data['Date'].max().month).zfill(2)}-{str(data['Date'].max().day).zfill(2)}"
@@ -97,7 +124,7 @@ class StockData:
                 pickle.dump(meta, fp, protocol=pickle.HIGHEST_PROTOCOL)
 
 
-    def update(labels=None):
+    def update(self, labels=None):
         """
         Update to the most recent pricing data and write to file.
         
@@ -127,14 +154,14 @@ class StockData:
             path = self.create_folder_path(label.lower())
             
             # Load current data.
-            with open(f"{path}/meta.pkl", "wb") as fp:
+            with open(f"{path}/meta.pkl", "rb") as fp:
                 meta = pickle.load(fp)
             data = pd.read_pickle(f"{path}/data.pkl")
             last_date = meta['last_date']
             
             # Update data.
             tckr = yf.Ticker(label.upper())
-            new_data = add_columns_on_import(add_tckr.history(start=last_date))
+            new_data = self.add_columns_on_import(tckr.history(start=last_date))
             
             # Add new date to old data.
             data = pd.concat([data, new_data], axis=0).drop_duplicates()
@@ -332,4 +359,20 @@ class StockData:
             d_data=self.d_data, x_col='Date', y_col=data_col, labels=labels,
             period=period, width=width, height=height
         ).display()
+
+    
+    def dividend_summary(self, labels=None, div_type='FracDividends'):
+        """
+        Summarizes the dividends in the available data.
+        """
+        df_list = []
+        # Handle default case.
+        if isinstance(labels, type(None)):
+            labels = [l.lower() for l in self.dir_list]
+        else:
+            labels = check_and_convert_value_to_list(labels, str)
+        for label in labels:
+            df_list.append(dividend_summary(self.d_data[label], label, div_type))
+        df_summary = pd.DataFrame(df_list)
+        return df_summary
 

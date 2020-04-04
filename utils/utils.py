@@ -70,27 +70,6 @@ def add_year_month_quarter(df_init, date_col='Date'):
     return df
 
 
-def add_columns_on_import(df_input):
-    """
-    Centralized adding of useful columns.
-    
-    Args:
-        df_input (pandas.DataFrame): The stock price data table.
-    
-    Returns:
-        (pandas.DataFrame): The table with the new columns.
-    """
-    # Copy to avoid overwrite.
-    df = df_input.copy()
-    # Add columns.
-    df['Date'] = df.index
-    df['FracDividends'] = df['Dividends'] / df['Close']
-    df = add_year_month_quarter(df, date_col='Date')
-    # Make Dividends column equal to Nan when zero.
-    
-    return df
-
-
 def arrange_data_for_chart(d_data, labels=None, column='Close', period='max'):
     """
     Creates a single DataFrame from the source dictionary, and
@@ -123,7 +102,7 @@ def arrange_data_for_chart(d_data, labels=None, column='Close', period='max'):
     # Get relevant data for each label.
     df_list = []
     for label in labels:
-        df_temp = reduce_data_period(d_data[label][['Date', column]],
+        df_temp = reduce_data_period(d_data[label.lower()][['Date', column]],
                                      date_col='Date',
                                      period=period)
         df_temp = df_temp.loc[df_temp[column]>0]
