@@ -1,6 +1,8 @@
 # Simple `stocks`
 Because you can never have too many Python libraries focused on equities...
 
+![stonks](2f0.png)
+
 ## Functionality
 Provides a single access point, the `StockData` class, that allows the user to:
  - Download and store daily stock price data via `yfinance`
