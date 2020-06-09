@@ -44,10 +44,10 @@ class StockData:
         self.dir_list = [d.lower() for d in self.dir_list]
         if not self.dir_list:
             print(f"Folder '{self.root}' has no data.")
-        else:
-            print(f"Folder '{self.root}' the following stocks:\n\t|")
-            for folder in self.dir_list:
-                print(f"\t|-- {folder.upper()}")
+        #else:
+        #    print(f"Folder '{self.root}' the following stocks:\n\t|")
+        #    for folder in self.dir_list:
+        #        print(f"\t|-- {folder.upper()}")
 
 
     def create_folder_path(self, folder):
@@ -376,3 +376,25 @@ class StockData:
         df_summary = pd.DataFrame(df_list)
         return df_summary
 
+    
+    def get_stock_price(self, label, date=None, price_type='Close'):
+        """
+        Returns the price of the stock at the given date.
+        
+        Args:
+            label (str): The stock symbol.
+            
+            date (str): The date for which to get the price, 'YYYY-MM-DD'.
+             Default is None, which gets the latest price.
+            
+            price_type (str): One of 'Close', 'Open', 'High', 'Low'.
+        
+        Returns:
+            (float): The price of the requested stock.
+        """
+        data = self.d_data[label.lower()].copy()
+        if date:
+            date = pd.to_datetime(date, format='%Y-%m-%d')
+        else:
+            date = data['Date'].max()
+        return data.loc[data['Date']==date, price_type].iloc[0]

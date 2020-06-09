@@ -105,7 +105,7 @@ def arrange_data_for_chart(d_data, labels=None, column='Close', period='max'):
         df_temp = reduce_data_period(d_data[label.lower()][['Date', column]],
                                      date_col='Date',
                                      period=period)
-        df_temp = df_temp.loc[df_temp[column]>0]
+        df_temp = df_temp.loc[df_temp[column].notnull()]
         df_temp['Symbol'] = label.upper()
         df_list.append(df_temp)
     

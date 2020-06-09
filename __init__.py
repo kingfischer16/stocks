@@ -3,3 +3,4 @@
 """
 
 from .stock_data import StockData
+from .portfolio import Portfolio
