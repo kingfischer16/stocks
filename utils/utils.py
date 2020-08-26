@@ -147,3 +147,4 @@ def reduce_data_period(df_input, date_col='Date', period='max'):
         raise ValueError("Time period must be one of: 'd' (days), 'm' (months), 'y' (years).")
     
     return df_input.loc[df_input[date_col]>=cutoff_date].copy()
+
